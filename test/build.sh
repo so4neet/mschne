@@ -1,0 +1,1 @@
+clang log_test.c -g -fdeclspec -fPIC -o ../build/log_test.out -Isrc -I../src/ -L../build -lmschne -Wl,-rpath,.

@@ -1,6 +1,10 @@
 #!/bin/bash
 
 debug=0
+cTarget="mschne"
+cObjs=$(find . -type f -name "*.c")
+cFlags="-g -shared -fdeclspec -fPIC"
+lFlags="-lraylib"
 
 # Get launch flags
 
@@ -16,4 +20,5 @@ if [ "$debug" -eq 1 ]; then
         echo "Debug Build Enabled"
 fi
 
-# Build stuff here once i have actual code lmao
+# Build stuff 
+clang $cObjs $cFlags -o ../build/lib$cTarget.so $lFlags
