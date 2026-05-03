@@ -11,6 +11,7 @@ void func_log(logLevel lvl, const char* msg) {
                                   "[WARN] | ",
                                   "[INFO] | ",
                                   "[DEBUG] | "};
-        
+#if !defined MSUPPRESS
         printf("\033[%sm%s%s\033[0m\n", lvl_clr[lvl], lvl_str[lvl], msg);
+#endif
 }
