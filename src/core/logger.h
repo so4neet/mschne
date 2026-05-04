@@ -10,8 +10,8 @@ typedef enum {
 
 void func_log(logLevel lvl, const char* msg);
 
-#define mWarn(msg) func_log(LOG_LVL_WARN, msg);
-#define mInfo(msg) func_log(LOG_LVL_INFO, msg);
-#define mDebug(msg) func_log(LOG_LVL_DEBUG, msg);
-#define mErr(msg) func_log(LOG_LVL_ERR, msg);
-#define mFatal(msg) func_log(LOG_LVL_FATAL, msg);
+void mWarn(const char* msg);
+void mInfo(const char* msg);
+void mDebug(const char* msg);
+void mErr(const char* msg);
+void mFatal(const char* msg);

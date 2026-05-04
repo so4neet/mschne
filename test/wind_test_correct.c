@@ -1,5 +1,4 @@
-#include <core/logger.h>
-#include <core/render.h>
+#include <mschne.h>
 
 int main() {
         mInfo("Trying to open window...");
@@ -7,6 +6,6 @@ int main() {
         win.width = 1920;
         win.height = 1080;
         win.winName = "MSCHNE Correct";
-        CreateWindow(win);
+        m_createWin(win);
         RenderWindow();
 }

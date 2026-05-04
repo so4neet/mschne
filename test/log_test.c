@@ -1,4 +1,4 @@
-#include <core/logger.h>
+#include <mschne.h>
 
 int main() {
         mWarn("This is a warning log message.");
@@ -6,4 +6,6 @@ int main() {
         mDebug("This is a debug log message.");
         mErr("This is an error log message.");
         mFatal("This is a fatal log message.");
+
+        func_log(1, "This should fail.");
 }
