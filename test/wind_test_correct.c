@@ -7,5 +7,4 @@ int main() {
         win.height = 1080;
         win.winName = "MSCHNE Correct";
         m_createWin(win);
-        RenderWindow();
 }

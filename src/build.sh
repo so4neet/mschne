@@ -4,7 +4,7 @@ suppress=0
 cTarget="mschne"
 cObjs=$(find . -type f -name "*.c")
 cFlags="-g -shared -fdeclspec -fPIC"
-lFlags="-lraylib"
+lFlags="-lSDL3"
 
 # Get launch flags
 

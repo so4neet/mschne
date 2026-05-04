@@ -34,7 +34,7 @@ typedef struct app_window {
 
 // Engine structs
 
-typedef struct game_inst {
+typedef struct renderer {
         SDL_Window *window;
         SDL_Renderer *renderer;
-} game_inst;
+} renderer;

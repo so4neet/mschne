@@ -6,9 +6,35 @@
 #include "../../globals.h"
 #include "platform_linux.h"
 
-b8 Plat_InitSDL();
+// Most of this code was created by following "Open Window - Beginners Guide to SDL3 in C - Part 1 | Programming Rainbow"
 
-b8 Plat_InitWindow(app_window win) {
+void Plat_FreeSDL(renderer *render) {
+        if(render->window) {
+                SDL_DestroyWindow(render->window);
+                render->window = NULL;
+        }
+
+        if(render->renderer) {
+                SDL_DestroyRenderer(render->renderer);
+                render->renderer = NULL;
+        }
+        SDL_Quit();
+}
+
+void Plat_RenderClear(renderer *render) {
+        SDL_Delay(100); 
+        SDL_RenderClear(render->renderer);
+        SDL_RenderPresent(render->renderer);
+        mInfo("Opened Window.");
+        //SDL_Delay(5000);
+}
+
+b8 Plat_InitWindow(app_window win, renderer *render) {
+        // Initialize SDL
+        if (!SDL_Init(SDL_FLAGS)) {
+                mFatal("Couldn't init renderer, aborting.");
+                return FALSE;
+        }
         // Check if w,h,n are defined
         if (win.width == 0) {
                 mWarn("Window width not defined, defaulting...");
@@ -22,5 +48,22 @@ b8 Plat_InitWindow(app_window win) {
                 mWarn("Window name not defined, defaulting...");
                 win.winName = DEF_WIN_NAME;
         }
+
+        // Create the window
+        render->window = SDL_CreateWindow(win.winName, win.width, win.height, 0);
+        if (!render->window) {
+                mFatal("Couldn't create window, aborting.");
+                return FALSE;
+        } else {
+                mInfo("Initialized window.");
+        }
+
+        render->renderer = SDL_CreateRenderer(render->window, NULL);
+        if (!render->renderer) {
+                mFatal("Couldn't create renderer, aborting.");
+        } else {
+                mInfo("Initialized renderer.");
+        }
+        return TRUE;
 }
 
