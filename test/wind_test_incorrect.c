@@ -1,14 +1,10 @@
 #include <mschne.h>
-#include <stdio.h>
 
 int main() {
-        // Fills struct with window information
+        // Empty struct, doesn't contain any window information
         static app_window win;
-        win.width = 1920;
-        win.height = 1080;
-        win.winName = "MSCHNE Correct";
 
-        // Create the window
+        // Create the window, because the struct is empty it will use default values
         m_createWin(win);
 
         // Game loop
@@ -17,7 +13,6 @@ int main() {
         }
 
         // Close window
-        mInfo("Destroyed window.");
         m_destroyWin();
         return 0;
 }

@@ -21,12 +21,25 @@ void Plat_FreeSDL(renderer *render) {
         SDL_Quit();
 }
 
-void Plat_RenderClear(renderer *render) {
-        SDL_Delay(100); 
+b8 Plat_Event(renderer *render) {
+        SDL_Event event;
+
+        while (SDL_PollEvent(&event)) {
+                switch (event.type) {
+                        case SDL_EVENT_QUIT:
+                                render->isRunning = false;
+                                break;
+                        default:
+                                break;
+                }
+        }
+        return render->isRunning;
+}
+
+void Plat_Draw(renderer *render) {
         SDL_RenderClear(render->renderer);
         SDL_RenderPresent(render->renderer);
-        mInfo("Opened Window.");
-        //SDL_Delay(5000);
+        SDL_Delay(16);
 }
 
 b8 Plat_InitWindow(app_window win, renderer *render) {
@@ -61,9 +74,13 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
         render->renderer = SDL_CreateRenderer(render->window, NULL);
         if (!render->renderer) {
                 mFatal("Couldn't create renderer, aborting.");
+                return FALSE;
         } else {
+                render->isRunning = true;
                 mInfo("Initialized renderer.");
         }
+        mInfo("Opened window.");
+        Plat_Draw(render);
         return TRUE;
 }
 
