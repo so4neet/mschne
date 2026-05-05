@@ -16,7 +16,6 @@ int main() {
         }
 
         // Close window
-        mInfo("Destroyed window.");
         m_destroyWin();
         return 0;
 }

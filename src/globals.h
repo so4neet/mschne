@@ -36,8 +36,10 @@ typedef struct app_window {
 
 typedef struct renderer {
         SDL_Window *window;
-        SDL_Renderer *renderer;
+        SDL_GPUDevice *device;
+        SDL_GPUCommandBuffer *buffer;
+        SDL_GPURenderPass *renderPass;
+        SDL_GPUTexture *swapchain;
         SDL_Event event;
         b8 isRunning;
 } renderer;
-
