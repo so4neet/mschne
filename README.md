@@ -5,7 +5,9 @@ MSCHNE uses SDL for its rendering, and compiles as a dynamic library.
 
 
 ## Hello MSCHNE
-`#include <mschne.h>
+
+```c
+#include <mschne.h>
 
 int main() {
         // Fills struct with window information
@@ -26,4 +28,5 @@ int main() {
         mInfo("Destroyed window.");
         m_destroyWin();
         return 0;
-}`
+}
+```
