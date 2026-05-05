@@ -1,5 +1,4 @@
 #include <mschne.h>
-#include <stdio.h>
 
 int main() {
         // Fills struct with window information

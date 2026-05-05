@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../globals.h"
+
 typedef enum {
         LOG_LVL_FATAL = 0,
         LOG_LVL_ERR = 1,
@@ -10,8 +12,8 @@ typedef enum {
 
 void func_log(logLevel lvl, const char* msg);
 
-void mWarn(const char* msg);
-void mInfo(const char* msg);
-void mDebug(const char* msg);
-void mErr(const char* msg);
-void mFatal(const char* msg);
+MAPI void mWarn(const char* msg);
+MAPI void mInfo(const char* msg);
+MAPI void mDebug(const char* msg);
+MAPI void mErr(const char* msg);
+MAPI void mFatal(const char* msg);
