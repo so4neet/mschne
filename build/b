@@ -1,0 +1,4 @@
+#!/bin/bash
+cd ..
+./buildall.sh
+cd build

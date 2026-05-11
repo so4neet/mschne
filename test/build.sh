@@ -6,7 +6,7 @@
 
 cObjs=$(find . -type f -name "*.c")
 cFlags="-g -fdeclspec -fPIC"
-lFlags="-Isrc -I../src/ -L../build -lmschne -Wl,-rpath,."
+lFlags="-Isrc -I../src/ -L../build -lmschne -Wl,-rpath,. -lm"
 
 
 echo "Building test files"

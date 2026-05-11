@@ -1,5 +1,6 @@
 #pragma once
 #include <stdio.h>
+#include <cglm/cglm.h>
 #include <SDL3/SDL.h>
 // Global defines and variables for MSCHNE
 
@@ -24,6 +25,10 @@ typedef int b8;
 #define DEF_HEIGHT      720
 #define DEF_WIN_NAME    "MSCHNE Window"
 
+// Shader defs
+#define DEF_VSHADER_PATH        "assets/shaders/vshader.spv"
+#define DEF_FSHADER_PATH        "assets/shaders/fshader.spv"
+
 // Window structs
 
 typedef struct app_window {
@@ -38,8 +43,32 @@ typedef struct renderer {
         SDL_Window *window;
         SDL_GPUDevice *device;
         SDL_GPUCommandBuffer *buffer;
+        SDL_GPUGraphicsPipeline *pipeline;
         SDL_GPURenderPass *renderPass;
         SDL_GPUTexture *swapchain;
+        SDL_GPUTexture *depthTex;
+        SDL_GPUBuffer *vbo;
+        SDL_GPUBuffer *ibo;
+        SDL_GPUShader *vshader;
+        SDL_GPUShader *fshader;
         SDL_Event event;
         b8 isRunning;
+        b8 frameLock;
 } renderer;
+
+typedef struct Camera3D {
+        vec3 position;
+        vec3 target;
+        vec3 direction;
+        vec3 up;
+        vec3 camRight;
+        vec3 camUp;
+        mat4 view_matrix;
+        mat4 proj_matrix;
+} Camera3D;
+
+typedef struct Vertex {
+        float x,y,z;
+        float r,g,b;
+} Vertex;
+

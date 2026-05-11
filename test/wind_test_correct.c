@@ -12,7 +12,8 @@ int main() {
 
         // Game loop
         while (m_pollEvents()) {
-                m_draw();
+                m_startFrame();;
+                m_endFrame();
         }
 
         // Close window

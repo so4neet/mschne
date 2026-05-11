@@ -22,3 +22,7 @@ if [ "$suppress" -eq 1 ]; then
 else
         clang $cObjs $cFlags -o ../build/lib$cTarget.so $lFlags
 fi
+
+echo "Compiling shaders"
+glslc shaders/vshader.vert -o ../build/assets/shaders/vshader.spv
+glslc shaders/fshader.frag -o ../build/assets/shaders/fshader.spv
