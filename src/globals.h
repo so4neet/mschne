@@ -69,6 +69,20 @@ typedef struct Camera3D {
 
 typedef struct Vertex {
         float x,y,z;
-        float r,g,b;
+        float nx, ny, nz;
+        float u, v;
 } Vertex;
 
+typedef struct Mesh {
+        Vertex *vert_data;
+} Mesh;
+
+typedef struct Model {
+        SDL_GPUBuffer* vbo;
+        size_t vert_count;
+} Model;
+
+typedef struct StaticObject {
+        Mesh mesh;
+        vec3 pos;
+} StaticObject;
