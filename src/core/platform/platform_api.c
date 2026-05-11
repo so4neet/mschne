@@ -11,34 +11,6 @@
 // "Open Window - Beginners Guide to SDL3 in C - Part 1 | Programming Rainbow"
 // "Getting started with SDL3_gpu : Clear screen | glusoft.com"
 
-// Debug cube
-Vertex cube_verts[] = {
-    // position              // color
-    {-0.5f, -0.5f,  0.5f,   1.0f, 0.0f, 0.0f}, // front face - red
-    { 0.5f, -0.5f,  0.5f,   1.0f, 0.0f, 0.0f},
-    { 0.5f,  0.5f,  0.5f,   1.0f, 0.0f, 0.0f},
-    {-0.5f,  0.5f,  0.5f,   1.0f, 0.0f, 0.0f},
-    {-0.5f, -0.5f, -0.5f,   0.0f, 1.0f, 0.0f}, // back face - green
-    { 0.5f, -0.5f, -0.5f,   0.0f, 1.0f, 0.0f},
-    { 0.5f,  0.5f, -0.5f,   0.0f, 1.0f, 0.0f},
-    {-0.5f,  0.5f, -0.5f,   0.0f, 1.0f, 0.0f},
-};
-
-uint16_t cube_indices[] = {
-    // front
-    0, 1, 2,  0, 2, 3,
-    // back
-    5, 4, 7,  5, 7, 6,
-    // left
-    4, 0, 3,  4, 3, 7,
-    // right
-    1, 5, 6,  1, 6, 2,
-    // top
-    3, 2, 6,  3, 6, 7,
-    // bottom
-    4, 5, 1,  4, 1, 0
-};
-
 void Plat_LoadVertexShader(const char* path, renderer *render) {
         size_t size;
         void* vert_shdr = SDL_LoadFile(path, &size);
@@ -58,7 +30,6 @@ void Plat_LoadVertexShader(const char* path, renderer *render) {
         };
 
         render->vshader = SDL_CreateGPUShader(render->device, &vert_shader_info);
-        mInfo("Loaded vertex shader.");
 }
 
 void Plat_LoadFragmentShader(const char* path, renderer *render) {
@@ -70,6 +41,7 @@ void Plat_LoadFragmentShader(const char* path, renderer *render) {
 
         SDL_GPUShaderCreateInfo frag_shader_info = {
                 .num_uniform_buffers = 0,
+                .num_samplers = 1,
                 .format = SDL_GPU_SHADERFORMAT_SPIRV,
                 .stage = SDL_GPU_SHADERSTAGE_FRAGMENT,
                 .entrypoint = "main",
@@ -78,7 +50,6 @@ void Plat_LoadFragmentShader(const char* path, renderer *render) {
         };
 
         render->fshader = SDL_CreateGPUShader(render->device, &frag_shader_info);
-        mInfo("Loaded fragment shader.");
 }
 
 
@@ -99,64 +70,6 @@ void Plat_FreeSDL(renderer *render) {
         }
 
         SDL_Quit();
-}
-
-void Plat_InitBuffers(renderer *render) {
-        uint32_t vert_size = sizeof(cube_verts);
-        uint32_t ind_size = sizeof(cube_indices);
-
-        SDL_GPUBufferCreateInfo vbo_desc = {
-                .usage = SDL_GPU_BUFFERUSAGE_VERTEX,
-                .size = vert_size
-        };
-        render->vbo = SDL_CreateGPUBuffer(render->device, &vbo_desc);
-
-        SDL_GPUBufferCreateInfo ibo_desc = {
-                .usage = SDL_GPU_BUFFERUSAGE_INDEX,
-                .size = ind_size
-        };
-        render->ibo = SDL_CreateGPUBuffer(render->device, &ibo_desc);
-
-        SDL_GPUTransferBufferCreateInfo transfer_desc = {
-                .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
-                .size = vert_size + ind_size
-        };
-        SDL_GPUTransferBuffer* transferBuffer = SDL_CreateGPUTransferBuffer(render->device, &transfer_desc);
-
-        if (!transferBuffer) {
-                mFatal("Failed to create transfer buffer.");
-        }
-
-        void* data = SDL_MapGPUTransferBuffer(render->device, transferBuffer, false);
-        if (!data) {
-                mFatal("Failed to map transfer buffer.");
-        }
-        memcpy(data, cube_verts, vert_size);
-        memcpy((uint8_t*)data + vert_size, cube_indices, ind_size);
-
-        SDL_UnmapGPUTransferBuffer(render->device, transferBuffer);
-
-        SDL_GPUCommandBuffer* cmd = SDL_AcquireGPUCommandBuffer(render->device);
-        SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(cmd);
-
-        SDL_UploadToGPUBuffer(copyPass,
-        &(SDL_GPUTransferBufferLocation){.transfer_buffer = transferBuffer, .offset = 0},
-        &(SDL_GPUBufferRegion){.buffer = render->vbo, .offset = 0, .size = vert_size},
-        false);
-
-        SDL_UploadToGPUBuffer(copyPass,
-        &(SDL_GPUTransferBufferLocation){.transfer_buffer = transferBuffer, .offset = vert_size},
-        &(SDL_GPUBufferRegion){.buffer = render->ibo, .size = ind_size},
-        false);
-
-        SDL_EndGPUCopyPass(copyPass);
-        SDL_SubmitGPUCommandBuffer(cmd);
-        
-        SDL_WaitForGPUIdle(render->device);
-
-        SDL_ReleaseGPUTransferBuffer(render->device, transferBuffer);
-        mInfo("VBO and IBO Initialized.");
-        
 }
 
 b8 Plat_Event(renderer *render) {
@@ -240,8 +153,6 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
         if (!render->device) {
                 mFatal("Couldn't init GPU, aborting.");
                 return FALSE;
-        } else {
-                mInfo("Initialized GPU.");
         }
 
         // Create the window
@@ -257,9 +168,21 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
         if (!SDL_ClaimWindowForGPUDevice(render->device, render->window)) {
                 mFatal("Couldn't claim window, aborting.");
                 return FALSE;
-        } else {
-                mInfo("Claimed window.");
         }
+
+        // Check if supports IMMEDIATE, MAILBOX
+        SDL_GPUPresentMode pMode;
+        if (SDL_WindowSupportsGPUPresentMode(render->device, render->window, SDL_GPU_PRESENTMODE_MAILBOX)) {
+                pMode = SDL_GPU_PRESENTMODE_MAILBOX;
+                mDebug("Setting presentmode to mailbox");
+        } else if (SDL_WindowSupportsGPUPresentMode(render->device, render->window, SDL_GPU_PRESENTMODE_IMMEDIATE)) {
+                pMode = SDL_GPU_PRESENTMODE_IMMEDIATE;
+                mDebug("Setting presentmode to immediate");
+        } else {
+                mDebug("Setting presentmode to vsync");
+                pMode = SDL_GPU_PRESENTMODE_VSYNC;
+        }
+        SDL_SetGPUSwapchainParameters(render->device, render->window, SDL_GPU_SWAPCHAINCOMPOSITION_SDR, pMode);
         SDL_GPUTextureCreateInfo depth_info = {
                 .type = SDL_GPU_TEXTURETYPE_2D,
                 .format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT,
@@ -274,7 +197,6 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
                 mFatal("Couldn't create depth texture.");
                 return FALSE;
         }
-        Plat_InitBuffers(render);
         Plat_LoadVertexShader(DEF_VSHADER_PATH, render);
         Plat_LoadFragmentShader(DEF_FSHADER_PATH, render);
         SDL_GPUGraphicsPipelineCreateInfo pipeline_info = {
@@ -367,6 +289,6 @@ void Camera3D_Init(Camera3D *cam, app_window *win) {
         glm_vec3_normalize(cam->camRight);
         glm_vec3_cross(cam->direction, cam->camRight, cam->camUp);
         float aspect = (float)win->width / (float)win->height;
-        glm_perspective(glm_rad(90.0f), aspect, 0.1f, 100.0f, cam->proj_matrix);
+        glm_perspective(glm_rad(60.0f), aspect, 0.1f, 100.0f, cam->proj_matrix);
         glm_lookat(cam->position, cam->target, cam->camUp, cam->view_matrix);
 }

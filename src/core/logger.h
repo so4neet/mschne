@@ -10,10 +10,11 @@ typedef enum {
         LOG_LVL_DEBUG = 4
 } logLevel;
 
-void func_log(logLevel lvl, const char* msg);
+static void func_log(logLevel lvl, const char* msg, b8 isNewline);
 
 MAPI void mWarn(const char* msg);
 MAPI void mInfo(const char* msg);
 MAPI void mDebug(const char* msg);
+MAPI void mDebugNN(const char* msg);
 MAPI void mErr(const char* msg);
 MAPI void mFatal(const char* msg);

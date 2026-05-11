@@ -73,16 +73,22 @@ typedef struct Vertex {
         float u, v;
 } Vertex;
 
-typedef struct Mesh {
-        Vertex *vert_data;
-} Mesh;
-
 typedef struct Model {
         SDL_GPUBuffer* vbo;
+        SDL_GPUTexture* texture;
+        SDL_GPUSampler* sampler;
         size_t vert_count;
 } Model;
 
+typedef struct RawModel {
+        Vertex* verts;
+        size_t vert_count;
+        void* tex_data;
+        int tex_width;
+        int tex_height;
+} RawModel;
+
 typedef struct StaticObject {
-        Mesh mesh;
+        Model model;
         vec3 pos;
 } StaticObject;
