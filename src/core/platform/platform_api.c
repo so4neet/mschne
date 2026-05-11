@@ -305,7 +305,7 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
                                 .instance_step_rate = 0,
                                 .pitch = sizeof(Vertex)
                         }},
-                        .num_vertex_attributes = 2,
+                        .num_vertex_attributes = 3,
                         .vertex_attributes = (SDL_GPUVertexAttribute[]) {
                                 {
                                 .location = 0,
@@ -318,6 +318,12 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
                                 .buffer_slot = 0,
                                 .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
                                 .offset = sizeof(float) * 3
+                        },
+                        {
+                                .location = 2,
+                                .buffer_slot = 0,
+                                .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
+                                .offset = sizeof(float) * 6
                         }
                 }
                 },
