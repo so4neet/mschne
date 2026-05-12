@@ -108,6 +108,13 @@ MAPI Model m_loadModel(const char* path, const char* tex_path) {
                 mErr("m_loadModel: no vertex data");
                 return result;
         }
+        // Generate AABB
+        glm_vec3_fill(result.aabb_min, FLT_MAX);
+        glm_vec3_fill(result.aabb_max, -FLT_MAX);
+        for (size_t i=0; i<vert_count; i++) {
+                glm_vec3_minv(result.aabb_min, (vec3){verts[i].x, verts[i].y, verts[i].z}, result.aabb_min);
+                glm_vec3_maxv(result.aabb_max, (vec3){verts[i].x, verts[i].y, verts[i].z}, result.aabb_max);
+        }
         SDL_GPUBufferCreateInfo vbo_info = {
                 .usage = SDL_GPU_BUFFERUSAGE_VERTEX,
                 .size  = sizeof(Vertex) * vert_count
@@ -205,6 +212,10 @@ MAPI void m_drawModel(Model model, vec3 position, vec3 rotation) {
         if (!model.vert_count || !model.texture) {
                 return;
         }
+        mat4 viewProj;
+        glm_mat4_mul(cam.proj_matrix, cam.view_matrix, viewProj);
+        vec4 frust_planes[6];
+        glm_frustum_planes(viewProj, frust_planes);
         mat4 model_mat;
         glm_mat4_identity(model_mat);
         glm_translate(model_mat, position);
@@ -215,7 +226,14 @@ MAPI void m_drawModel(Model model, vec3 position, vec3 rotation) {
         mat4 mvp;
         glm_mat4_mul(cam.proj_matrix, cam.view_matrix, mvp);
         glm_mat4_mul(mvp, model_mat, mvp);
-
+        // Frustum check
+        vec3 world_aabb[2], local_aabb[2];
+        glm_vec3_copy(model.aabb_min, local_aabb[0]);
+        glm_vec3_copy(model.aabb_max, local_aabb[1]);
+        glm_aabb_transform(local_aabb, model_mat, world_aabb);
+        if (!glm_aabb_frustum(world_aabb, frust_planes)) {
+                return;
+        }
         SDL_PushGPUVertexUniformData(render.buffer, 0, mvp, sizeof(mat4));
         SDL_BindGPUGraphicsPipeline(render.renderPass, render.pipeline);
         SDL_GPUBufferBinding vbo_binding = { .buffer = model.vbo, .offset = 0 };

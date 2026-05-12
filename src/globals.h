@@ -83,6 +83,8 @@ typedef struct Model {
         SDL_GPUTexture* texture;
         SDL_GPUSampler* sampler;
         size_t vert_count;
+        vec3 aabb_min;
+        vec3 aabb_max;
 } Model;
 
 typedef struct RawModel {
