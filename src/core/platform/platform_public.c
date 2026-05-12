@@ -18,7 +18,7 @@ MAPI b8 m_createWin(app_window win) {
 }
 
 MAPI b8 m_pollEvents(){
-        return Plat_Event(&render);
+        return Plat_Event(&render, &cam);
 }
 
 MAPI void m_startFrame() {
@@ -31,10 +31,6 @@ MAPI void m_endFrame() {
 
 MAPI void m_destroyWin() {
         Plat_FreeSDL(&render);
-}
-
-MAPI void m_updateCam() {
-        Camera3D_Update(&cam);
 }
 
 static Vertex* m_loadFBX(const char* path, size_t* out_count) {
@@ -188,7 +184,7 @@ MAPI Model m_loadModel(const char* path, const char* tex_path) {
         return result;
 }
 
-MAPI void m_drawModel(Model model, vec3 position) {
+MAPI void m_drawModel(Model model, vec3 position, vec3 rotation) {
         if (render.frameLock == FALSE) {
                 mWarn("Frame is currently locked. Check where you are calling m_drawModel.");
                 return;
@@ -199,6 +195,9 @@ MAPI void m_drawModel(Model model, vec3 position) {
         mat4 model_mat;
         glm_mat4_identity(model_mat);
         glm_translate(model_mat, position);
+        glm_rotate(model_mat, glm_rad(rotation[0]), (vec3){1.0f, 0.0f, 0.0f});
+        glm_rotate(model_mat, glm_rad(rotation[1]), (vec3){0.0f, 1.0f, 0.0f});
+        glm_rotate(model_mat, glm_rad(rotation[2]), (vec3){0.0f, 0.0f, 1.0f});
 
         mat4 mvp;
         glm_mat4_mul(cam.proj_matrix, cam.view_matrix, mvp);

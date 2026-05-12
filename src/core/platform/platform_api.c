@@ -11,6 +11,8 @@
 // "Open Window - Beginners Guide to SDL3 in C - Part 1 | Programming Rainbow"
 // "Getting started with SDL3_gpu : Clear screen | glusoft.com"
 
+void Camera3D_Update(Camera3D *cam, float xoffset, float yoffset);
+
 void Plat_LoadVertexShader(const char* path, renderer *render) {
         size_t size;
         void* vert_shdr = SDL_LoadFile(path, &size);
@@ -72,7 +74,7 @@ void Plat_FreeSDL(renderer *render) {
         SDL_Quit();
 }
 
-b8 Plat_Event(renderer *render) {
+b8 Plat_Event(renderer *render, Camera3D *cam) {
         SDL_Event event;
 
         while (SDL_PollEvent(&event)) {
@@ -80,6 +82,11 @@ b8 Plat_Event(renderer *render) {
                         case SDL_EVENT_QUIT:
                                 render->isRunning = false;
                                 break;
+                        case SDL_EVENT_MOUSE_MOTION:
+                                float sensitivity = 0.1f;
+                                float xoffset = event.motion.xrel * sensitivity;
+                                float yoffset = -event.motion.yrel * sensitivity;
+                                Camera3D_Update(cam, xoffset, yoffset);
                         default:
                                 break;
                 }
@@ -183,6 +190,11 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
                 pMode = SDL_GPU_PRESENTMODE_VSYNC;
         }
         SDL_SetGPUSwapchainParameters(render->device, render->window, SDL_GPU_SWAPCHAINCOMPOSITION_SDR, pMode);
+
+        // Lock cursor
+        SDL_SetWindowRelativeMouseMode(render->window, true);
+
+        
         SDL_GPUTextureCreateInfo depth_info = {
                 .type = SDL_GPU_TEXTURETYPE_2D,
                 .format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT,
@@ -276,8 +288,20 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
         return TRUE;
 }
 
-void Camera3D_Update(Camera3D *cam) {
-        glm_lookat(cam->position, cam->target, cam->camUp, cam->view_matrix);
+void Camera3D_Update(Camera3D *cam, float xoffset, float yoffset) {
+        cam->yaw += xoffset;
+        cam->pitch += yoffset;
+
+        if (cam->pitch > 89.0f) cam->pitch = 89.0f;
+        if (cam->pitch < -89.0f) cam->pitch = -89.0f;
+
+        vec3 front;
+        front[0] = cosf(glm_rad(cam->yaw)) * cosf(glm_rad(cam->pitch));
+        front[1] = sinf(glm_rad(cam->pitch));
+        front[2] = sinf(glm_rad(cam->yaw)) * cosf(glm_rad(cam->pitch));
+        glm_vec3_normalize_to(front, cam->direction);
+        glm_vec3_add(cam->position, cam->direction, cam->target);
+        glm_lookat(cam->position, cam->target, cam->up, cam->view_matrix);
 }
 
 void Camera3D_Init(Camera3D *cam, app_window *win) {
@@ -290,5 +314,5 @@ void Camera3D_Init(Camera3D *cam, app_window *win) {
         glm_vec3_cross(cam->direction, cam->camRight, cam->camUp);
         float aspect = (float)win->width / (float)win->height;
         glm_perspective(glm_rad(60.0f), aspect, 0.1f, 100.0f, cam->proj_matrix);
-        glm_lookat(cam->position, cam->target, cam->camUp, cam->view_matrix);
+        glm_lookat(cam->position, cam->target, cam->up, cam->view_matrix);
 }

@@ -65,6 +65,8 @@ typedef struct Camera3D {
         vec3 camUp;
         mat4 view_matrix;
         mat4 proj_matrix;
+        float pitch;
+        float yaw;
 } Camera3D;
 
 typedef struct Vertex {
