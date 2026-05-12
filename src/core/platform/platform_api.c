@@ -6,6 +6,7 @@
 #include "../logger.h"
 #include "../../globals.h"
 #include "platform_api.h"
+#include "../controller/first_person.h"
 
 // References used:
 // "Open Window - Beginners Guide to SDL3 in C - Part 1 | Programming Rainbow"
@@ -76,17 +77,12 @@ void Plat_FreeSDL(renderer *render) {
 
 b8 Plat_Event(renderer *render, Camera3D *cam) {
         SDL_Event event;
-
         while (SDL_PollEvent(&event)) {
+                HandleFPSMouse(&event, cam);
                 switch (event.type) {
                         case SDL_EVENT_QUIT:
                                 render->isRunning = false;
                                 break;
-                        case SDL_EVENT_MOUSE_MOTION:
-                                float sensitivity = 0.1f;
-                                float xoffset = event.motion.xrel * sensitivity;
-                                float yoffset = -event.motion.yrel * sensitivity;
-                                Camera3D_Update(cam, xoffset, yoffset);
                         default:
                                 break;
                 }
@@ -115,7 +111,7 @@ void Plat_StartFrame(renderer *render) {
 
         SDL_GPUColorTargetInfo colorTargetInfo = {
                 .texture = render->swapchain,
-                .clear_color = (SDL_FColor){0.3f, 0.6f, 0.5f, 1.0f},
+                .clear_color = (SDL_FColor){0.0f, 0.0f, 0.0f, 1.0f},
                 .load_op = SDL_GPU_LOADOP_CLEAR,
                 .store_op = SDL_GPU_STOREOP_STORE
         };
@@ -124,7 +120,7 @@ void Plat_StartFrame(renderer *render) {
         render->frameLock = TRUE;
 }
 
-void Plat_EndFrame(renderer *render) {
+void Plat_EndFrame(renderer *render, Camera3D *cam) {
         if (!render->frameLock) return;
 
         SDL_EndGPURenderPass(render->renderPass);
@@ -194,7 +190,7 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
         // Lock cursor
         SDL_SetWindowRelativeMouseMode(render->window, true);
 
-        
+
         SDL_GPUTextureCreateInfo depth_info = {
                 .type = SDL_GPU_TEXTURETYPE_2D,
                 .format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT,

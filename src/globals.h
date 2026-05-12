@@ -29,6 +29,9 @@ typedef int b8;
 #define DEF_VSHADER_PATH        "assets/shaders/vshader.spv"
 #define DEF_FSHADER_PATH        "assets/shaders/fshader.spv"
 
+// Movement defs
+#define DEF_MOVE_SPEED  4.0f
+
 // Window structs
 
 typedef struct app_window {

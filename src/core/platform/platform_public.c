@@ -2,14 +2,24 @@
 #include "../../globals.h"
 #include "platform_api.h"
 #include "platform_public.h"
+#include "../controller/first_person.h"
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <SDL3_image/SDL_image.h>
 
-
+static Uint64 lt = 0;
+static float delta_time = 0.0f;
 renderer render = {0};
 Camera3D cam = {0};
+
+MAPI float m_deltaTime() {
+        Uint64 ct = SDL_GetTicksNS();
+        if (lt == 0) lt = ct;
+        float dt = (float)(ct - lt) / 1e9f;
+        lt = ct;
+        return dt;
+}
 
 MAPI b8 m_createWin(app_window win) {
         Plat_InitWindow(win, &render);
@@ -18,7 +28,10 @@ MAPI b8 m_createWin(app_window win) {
 }
 
 MAPI b8 m_pollEvents(){
-        return Plat_Event(&render, &cam);
+        delta_time = m_deltaTime();
+        b8 running = Plat_Event(&render, &cam);
+        UpdatePlayerPos(&cam, delta_time);
+        return running;
 }
 
 MAPI void m_startFrame() {
@@ -26,7 +39,7 @@ MAPI void m_startFrame() {
 }
 
 MAPI void m_endFrame() {
-        Plat_EndFrame(&render);
+        Plat_EndFrame(&render, &cam);
 }
 
 MAPI void m_destroyWin() {
