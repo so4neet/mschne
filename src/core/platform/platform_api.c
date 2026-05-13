@@ -262,7 +262,7 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
 
                 .rasterizer_state = {
                         .fill_mode = SDL_GPU_FILLMODE_FILL,
-                        .cull_mode = SDL_GPU_CULLMODE_NONE,
+                        .cull_mode = SDL_GPU_CULLMODE_BACK,
                         .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE
                 },
                 
