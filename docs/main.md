@@ -34,21 +34,21 @@ Setting up MSCHNE for development is a fairly simple ordeal.
 
 ## Logging
 
-MSCHNE has built-in logging for 5 types: Info, Debug, Warnings, Errors, and Fatal. It also contains a variation of mDebug that doesn't place a newline at the end of the message, this is a stopgap until i rewrite the logging system to be able to pass through other strings. These can be called by using their respective functions: 
+MSCHNE has built-in logging for 5 types: Info, Debug, Warnings, Errors, and Fatal. You can also pass through data types and strings: 
 ```c
 mInfo("This is info");
 mDebug("This is a debug message");
-mDebugNN("This is a debug message without a newline");
+mDebug("This is an example with a %s", string);
 mWarn("This is a warning message");
 mErr("This is an error message");
 mFatal("This is a fatal crash message");
 ```
 
-These can be supressed at compile-time by passing through the build flag `-D=MSUPPRESS`.
+These can be supressed at compile-time by passing through the build flag `-D=MSUPPRESS`, although fatal messages will always log regardless of compile flags. This may change in the future if the engine is switched to displaying system-ui popup messages for fatal crash logs.
 
 ## Creating A Window
 
-MSCHNE uses SDL3 under the hood, wrapped in helper functions to abstract the windowing code.
+MSCHNE uses SDL_gpu under the hood, wrapped in helper functions to abstract the windowing code.
 
 To create a window, you first need to pass through the `app_window` struct, which has the three elements `width`, `height`, and `winName`. If left blank, the engine will default to 1280x720, with the title "MSCHNE Window". A basic example of this would be:
 ```c
