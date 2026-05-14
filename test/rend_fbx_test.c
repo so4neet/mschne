@@ -6,7 +6,7 @@ int main() {
         win.width = 1920;
         win.height = 1080;
         win.winName = "FBX Render";
-        vec3 rotation1 = {0.0f, 90.0f, 270.0f};
+        vec3 rotation1 = {90.0f, -180.0f, -270.0f};
         vec3 rotation2 = {0.0f, 90.0f, 0.0f};
         m_createWin(win);
         Model test_model = m_loadModel("assets/models/house.fbx", "assets/textures/cottage_diffuse.png");
