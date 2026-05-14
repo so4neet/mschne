@@ -199,8 +199,7 @@ MAPI Model m_loadModel(const char* path, const char* tex_path) {
                 .address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT
         };
         result.sampler = SDL_CreateGPUSampler(render.device, &sampler_info);
-        mDebugNN("Loaded model: ");
-        printf("%s\n",path);
+        mDebug("Loaded model: %s", path);
         return result;
 }
 
