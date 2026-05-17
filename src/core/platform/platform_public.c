@@ -22,7 +22,11 @@ MAPI float m_deltaTime() {
 }
 
 MAPI b8 m_createWin(app_window win) {
-        Plat_InitWindow(win, &render);
+        if (!Plat_InitWindow(win, &render)) {
+                // Catch if window can't open and make sure to free memory.
+                Plat_FreeSDL(&render);
+                return FALSE;
+        }
         Camera3D_Init(&cam, &win);
         return TRUE;
 }

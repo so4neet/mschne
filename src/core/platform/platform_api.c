@@ -301,14 +301,11 @@ void Camera3D_Update(Camera3D *cam, float xoffset, float yoffset) {
 }
 
 void Camera3D_Init(Camera3D *cam, app_window *win) {
+        cam->yaw = 0.0f;
+        cam->pitch = 0.0f;
         glm_vec3_copy((vec3){0.0f, 0.0f, 1.0f}, cam->position);
-        glm_vec3_copy((vec3){0.0f, 0.0f, 0.0f}, cam->target);
         glm_vec3_copy((vec3){0.0f, 1.0f, 0.0f}, cam->up);
-        glm_vec3_sub(cam->position, cam->target, cam->direction);
-        glm_vec3_cross(cam->up, cam->direction, cam->camRight);
-        glm_vec3_normalize(cam->camRight);
-        glm_vec3_cross(cam->direction, cam->camRight, cam->camUp);
+        Camera3D_Update(cam, 0.0f, 0.0f);
         float aspect = (float)win->width / (float)win->height;
-        glm_perspective(glm_rad(60.0f), aspect, 0.1f, 100.0f, cam->proj_matrix);
-        glm_lookat(cam->position, cam->target, cam->up, cam->view_matrix);
+        glm_perspective(glm_rad(90.0f), aspect, 0.1f, 100.0f, cam->proj_matrix);
 }
