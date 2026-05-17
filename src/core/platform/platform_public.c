@@ -55,7 +55,6 @@ static Vertex* m_loadFBX(const char* path, size_t* out_count) {
         );
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-                mErr("Failed to load FBX");
                 return NULL;
         }
 
@@ -105,7 +104,7 @@ MAPI Model m_loadModel(const char* path, const char* tex_path) {
         size_t vert_count = 0;
         Vertex* verts = m_loadFBX(path, &vert_count);
         if (!verts) {
-                mErr("m_loadModel: no vertex data");
+                mErr("Failed to load %s", path);
                 return result;
         }
         // Generate AABB
@@ -145,7 +144,7 @@ MAPI Model m_loadModel(const char* path, const char* tex_path) {
                 mErr("Failed to load texture, defaulting to error texture.");
                 surface = IMG_Load("assets/textures/missing.png");
                 if (!surface) {
-                        mFatal("Failed to load warning texture, this may cause visual artifacts!");
+                        mFatal("Failed to load warning texture, skipping model.");
                         return result;
                 }
         }
@@ -205,27 +204,28 @@ MAPI Model m_loadModel(const char* path, const char* tex_path) {
 
 MAPI void m_drawModel(Model model, vec3 position, vec3 rotation) {
         if (render.frameLock == FALSE) {
-                mWarn("Frame is currently locked. Check where you are calling m_drawModel.");
+                mWarn("Frame is currently locked.");
                 return;
         }
         if (!model.vert_count || !model.texture) {
                 return;
         }
         mat4 viewProj;
-        glm_mat4_mul(cam.proj_matrix, cam.view_matrix, viewProj);
-        vec4 frust_planes[6];
-        glm_frustum_planes(viewProj, frust_planes);
         mat4 model_mat;
+        mat4 mvp;
+        vec4 frust_planes[6];
+
+        glm_mat4_mul(cam.proj_matrix, cam.view_matrix, viewProj);
+        glm_frustum_planes(viewProj, frust_planes);
         glm_mat4_identity(model_mat);
+        // Translate and rotate
         glm_translate(model_mat, position);
         glm_rotate(model_mat, glm_rad(rotation[0]), (vec3){1.0f, 0.0f, 0.0f});
         glm_rotate(model_mat, glm_rad(rotation[1]), (vec3){0.0f, 1.0f, 0.0f});
         glm_rotate(model_mat, glm_rad(rotation[2]), (vec3){0.0f, 0.0f, 1.0f});
-
-        mat4 mvp;
+        // Frustum check
         glm_mat4_mul(cam.proj_matrix, cam.view_matrix, mvp);
         glm_mat4_mul(mvp, model_mat, mvp);
-        // Frustum check
         vec3 world_aabb[2], local_aabb[2];
         glm_vec3_copy(model.aabb_min, local_aabb[0]);
         glm_vec3_copy(model.aabb_max, local_aabb[1]);

@@ -14,11 +14,11 @@
 
 void Camera3D_Update(Camera3D *cam, float xoffset, float yoffset);
 
-void Plat_LoadVertexShader(const char* path, renderer *render) {
+static void Plat_LoadVertexShader(const char* path, renderer *render) {
         size_t size;
         void* vert_shdr = SDL_LoadFile(path, &size);
         if (!vert_shdr) {
-                mFatal("Couldn't load vertex shader.");
+                mFatal("Failed to load shader %s", path);
         }
 
         SDL_GPUShaderCreateInfo vert_shader_info = {
@@ -33,13 +33,14 @@ void Plat_LoadVertexShader(const char* path, renderer *render) {
         };
 
         render->vshader = SDL_CreateGPUShader(render->device, &vert_shader_info);
+        SDL_free(vert_shdr);
 }
 
-void Plat_LoadFragmentShader(const char* path, renderer *render) {
+static void Plat_LoadFragmentShader(const char* path, renderer *render) {
         size_t size;
         void* frag_shdr = SDL_LoadFile(path, &size);
         if (!frag_shdr) {
-                mFatal("Couldn't load fragment shader.");
+                mFatal("Failed to load shader %s", path);
         }
 
         SDL_GPUShaderCreateInfo frag_shader_info = {
@@ -53,6 +54,7 @@ void Plat_LoadFragmentShader(const char* path, renderer *render) {
         };
 
         render->fshader = SDL_CreateGPUShader(render->device, &frag_shader_info);
+        SDL_free(frag_shdr);
 }
 
 
@@ -190,7 +192,6 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
         // Lock cursor
         SDL_SetWindowRelativeMouseMode(render->window, true);
 
-
         SDL_GPUTextureCreateInfo depth_info = {
                 .type = SDL_GPU_TEXTURETYPE_2D,
                 .format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT,
@@ -200,6 +201,7 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
                 .layer_count_or_depth = 1,
                 .num_levels = 1
         };
+
         render->depthTex = SDL_CreateGPUTexture(render->device, &depth_info);
         if (!render->depthTex) {
                 mFatal("Couldn't create depth texture.");
@@ -207,7 +209,8 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
         }
         Plat_LoadVertexShader(DEF_VSHADER_PATH, render);
         Plat_LoadFragmentShader(DEF_FSHADER_PATH, render);
-        SDL_GPUGraphicsPipelineCreateInfo pipeline_info = {
+        // Create main pipeline
+        SDL_GPUGraphicsPipelineCreateInfo main_info = {
                 .target_info = {
                         .num_color_targets = 1,
                         .color_target_descriptions = (SDL_GPUColorTargetDescription[]) {{
@@ -257,15 +260,12 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
                         }
                 }
                 },
-
                 .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
-
                 .rasterizer_state = {
                         .fill_mode = SDL_GPU_FILLMODE_FILL,
                         .cull_mode = SDL_GPU_CULLMODE_BACK,
                         .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE
                 },
-                
                 .depth_stencil_state = {
                         .enable_depth_test = true,
                         .enable_depth_write = true,
@@ -274,9 +274,9 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
                 .vertex_shader = render->vshader,
                 .fragment_shader = render->fshader
         };
-        render->pipeline = SDL_CreateGPUGraphicsPipeline(render->device, &pipeline_info);
+        render->pipeline = SDL_CreateGPUGraphicsPipeline(render->device, &main_info);
         if (!render->pipeline) {
-                mFatal("Couldn't create graphics pipeline.");
+                mFatal("Couldn't create main graphics pipeline.");
                 return FALSE;
         }
         render->isRunning = TRUE;

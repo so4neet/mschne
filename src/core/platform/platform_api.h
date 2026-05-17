@@ -10,5 +10,5 @@ void Plat_EndFrame(renderer *render, Camera3D *cam);
 void Camera3D_Update(Camera3D *cam, float xoffset, float yoffset);
 void Camera3D_Init(Camera3D *cam, app_window *win);
 void Plat_InitBuffers(renderer *render);
-void Plat_LoadVertexShader(const char* path, renderer *render);
-void Plat_LoadFragmentShader(const char* path, renderer *render);
+static void Plat_LoadVertexShader(const char* path, renderer *render);
+static void Plat_LoadFragmentShader(const char* path, renderer *render);
