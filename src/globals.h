@@ -47,6 +47,7 @@ typedef struct renderer {
         SDL_GPUDevice *device;
         SDL_GPUCommandBuffer *buffer;
         SDL_GPUGraphicsPipeline *pipeline;
+        SDL_GPUGraphicsPipeline *skyPipeline;
         SDL_GPURenderPass *renderPass;
         SDL_GPUTexture *swapchain;
         SDL_GPUTexture *depthTex;
@@ -54,6 +55,8 @@ typedef struct renderer {
         SDL_GPUBuffer *ibo;
         SDL_GPUShader *vshader;
         SDL_GPUShader *fshader;
+        SDL_GPUShader *vshaderSky;
+        SDL_GPUShader *fshaderSky;
         SDL_Event event;
         b8 isRunning;
         b8 frameLock;

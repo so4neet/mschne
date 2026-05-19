@@ -14,49 +14,70 @@
 
 void Camera3D_Update(Camera3D *cam, float xoffset, float yoffset);
 
-static void Plat_LoadVertexShader(const char* path, renderer *render) {
-        size_t size;
-        void* vert_shdr = SDL_LoadFile(path, &size);
-        if (!vert_shdr) {
-                mFatal("Failed to load shader %s", path);
-        }
+// static void Plat_LoadVertexShader(const char* path, renderer *render) {
+//         size_t size;
+//         void* vert_shdr = SDL_LoadFile(path, &size);
+//         if (!vert_shdr) {
+//                 mFatal("Failed to load shader %s", path);
+//         }
 
-        SDL_GPUShaderCreateInfo vert_shader_info = {
-                .num_uniform_buffers = 1,
-                .num_samplers = 0,
+//         SDL_GPUShaderCreateInfo vert_shader_info = {
+//                 .num_uniform_buffers = 1,
+//                 .num_samplers = 0,
+//                 .num_storage_textures = 0,
+//                 .format = SDL_GPU_SHADERFORMAT_SPIRV,
+//                 .stage = SDL_GPU_SHADERSTAGE_VERTEX,
+//                 .entrypoint = "main",
+//                 .code = vert_shdr,
+//                 .code_size = size
+//         };
+
+//         render->vshader = SDL_CreateGPUShader(render->device, &vert_shader_info);
+//         SDL_free(vert_shdr);
+// }
+
+// static void Plat_LoadFragmentShader(const char* path, renderer *render) {
+//         size_t size;
+//         void* frag_shdr = SDL_LoadFile(path, &size);
+//         if (!frag_shdr) {
+//                 mFatal("Failed to load shader %s", path);
+//         }
+
+//         SDL_GPUShaderCreateInfo frag_shader_info = {
+//                 .num_uniform_buffers = 0,
+//                 .num_samplers = 1,
+//                 .format = SDL_GPU_SHADERFORMAT_SPIRV,
+//                 .stage = SDL_GPU_SHADERSTAGE_FRAGMENT,
+//                 .entrypoint = "main",
+//                 .code = frag_shdr,
+//                 .code_size = size
+//         };
+
+//         render->fshader = SDL_CreateGPUShader(render->device, &frag_shader_info);
+//         SDL_free(frag_shdr);
+// }
+
+static SDL_GPUShader* Plat_LoadShader(renderer *render, const char* path, SDL_GPUShaderStage stage, Uint32 num_uniform_buffers, Uint32 num_samplers) {
+        size_t size;
+        void* file = SDL_LoadFile(path, &size);
+        if (!file) mErr("Failed to load shader @ %s, you may encounter visual issues.", path);
+
+        SDL_GPUShaderCreateInfo info = {
+                .code = file,
+                .code_size = size,
+                .entrypoint = "main",
+                .format = SDL_GPU_SHADERFORMAT_SPIRV,
+                .stage = stage,
+                .num_uniform_buffers = num_uniform_buffers,
+                .num_samplers = num_samplers,
                 .num_storage_textures = 0,
-                .format = SDL_GPU_SHADERFORMAT_SPIRV,
-                .stage = SDL_GPU_SHADERSTAGE_VERTEX,
-                .entrypoint = "main",
-                .code = vert_shdr,
-                .code_size = size
         };
 
-        render->vshader = SDL_CreateGPUShader(render->device, &vert_shader_info);
-        SDL_free(vert_shdr);
+        SDL_GPUShader *shader = SDL_CreateGPUShader(render->device, &info);
+        SDL_free(file);
+        if (!shader) mErr("Failed to create shader @ %s.", path);
+        return shader; 
 }
-
-static void Plat_LoadFragmentShader(const char* path, renderer *render) {
-        size_t size;
-        void* frag_shdr = SDL_LoadFile(path, &size);
-        if (!frag_shdr) {
-                mFatal("Failed to load shader %s", path);
-        }
-
-        SDL_GPUShaderCreateInfo frag_shader_info = {
-                .num_uniform_buffers = 0,
-                .num_samplers = 1,
-                .format = SDL_GPU_SHADERFORMAT_SPIRV,
-                .stage = SDL_GPU_SHADERSTAGE_FRAGMENT,
-                .entrypoint = "main",
-                .code = frag_shdr,
-                .code_size = size
-        };
-
-        render->fshader = SDL_CreateGPUShader(render->device, &frag_shader_info);
-        SDL_free(frag_shdr);
-}
-
 
 void Plat_FreeSDL(renderer *render) {
         if(render->pipeline) SDL_ReleaseGPUGraphicsPipeline(render->device, render->pipeline);
@@ -207,8 +228,8 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
                 mFatal("Couldn't create depth texture.");
                 return FALSE;
         }
-        Plat_LoadVertexShader(DEF_VSHADER_PATH, render);
-        Plat_LoadFragmentShader(DEF_FSHADER_PATH, render);
+        render->vshader = Plat_LoadShader(render, DEF_VSHADER_PATH, SDL_GPU_SHADERSTAGE_VERTEX, 1, 0);
+        render->fshader = Plat_LoadShader(render, DEF_FSHADER_PATH, SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 1);
         // Create main pipeline
         SDL_GPUGraphicsPipelineCreateInfo main_info = {
                 .target_info = {
@@ -279,6 +300,28 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
                 mFatal("Couldn't create main graphics pipeline.");
                 return FALSE;
         }
+        // SDL_GPUGraphicsPipelineCreateInfo sky_info = {
+        //         .target_info = {
+        //                 .num_color_targets = 1,
+        //                 .color_target_descriptions = (SDL_GPUColorTargetDescription[]) {{
+        //                         .format = SDL_GetGPUSwapchainTextureFormat(render->device, render->window),
+        //                 }},
+        //                 .depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT,
+        //                 .has_depth_stencil_target = true
+        //         },
+        //         .vertex_input_state = { .num_vertex_buffers = 0, .num_vertex_attributes = 0 },
+        //         .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
+        //         .rasterizer_state = {
+        //                 .fill_mode = SDL_GPU_FILLMODE_FILL,
+        //                 .cull_mode = SDL_GPU_CULLMODE_NONE,
+        //         },
+        //         .depth_stencil_state = {
+        //                 .enable_depth_test = true,
+        //                 .enable_depth_write = false,
+        //                 .compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL
+        //         },
+                
+        // };
         render->isRunning = TRUE;
         mInfo("Opened window.");
         return TRUE;
