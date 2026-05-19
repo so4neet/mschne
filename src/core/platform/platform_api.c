@@ -288,6 +288,8 @@ void Camera3D_Update(Camera3D *cam, float xoffset, float yoffset) {
         cam->yaw += xoffset;
         cam->pitch += yoffset;
 
+        if (xoffset == 0.0f && yoffset == 0.0f) return;
+
         if (cam->pitch > 89.0f) cam->pitch = 89.0f;
         if (cam->pitch < -89.0f) cam->pitch = -89.0f;
 
