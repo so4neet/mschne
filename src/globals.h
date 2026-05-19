@@ -52,6 +52,8 @@ typedef struct renderer {
         SDL_GPUGraphicsPipeline *pipeline;
         SDL_GPUGraphicsPipeline *skyPipeline;
         SDL_GPURenderPass *renderPass;
+        SDL_GPUTexture *cubemap;
+        SDL_GPUSampler *cubeSampler;
         SDL_GPUTexture *swapchain;
         SDL_GPUTexture *depthTex;
         SDL_GPUBuffer *vbo;

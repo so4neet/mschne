@@ -37,11 +37,14 @@ static SDL_GPUShader* Plat_LoadShader(renderer *render, const char* path, SDL_GP
 }
 
 void Plat_FreeSDL(renderer *render) {
+        if(render->skyPipeline) SDL_ReleaseGPUGraphicsPipeline(render->device, render->skyPipeline);
         if(render->pipeline) SDL_ReleaseGPUGraphicsPipeline(render->device, render->pipeline);
         if(render->vshader) SDL_ReleaseGPUShader(render->device, render->vshader);
         if(render->fshader) SDL_ReleaseGPUShader(render->device, render->fshader);
         if(render->vshaderSky) SDL_ReleaseGPUShader(render->device, render->vshaderSky);
         if(render->fshaderSky) SDL_ReleaseGPUShader(render->device, render->fshaderSky);
+        if(render->cubemap) SDL_ReleaseGPUTexture(render->device, render->cubemap);
+        if(render->cubeSampler) SDL_ReleaseGPUSampler(render->device, render->cubeSampler);
         if(render->vbo) SDL_ReleaseGPUBuffer(render->device, render->vbo);
         if(render->ibo) SDL_ReleaseGPUBuffer(render->device, render->ibo);
         if(render->depthTex) SDL_ReleaseGPUTexture(render->device, render->depthTex);
@@ -190,8 +193,8 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
         // Load shaders
         render->vshader = Plat_LoadShader(render, DEF_VSHADER_PATH, SDL_GPU_SHADERSTAGE_VERTEX, 1, 0);
         render->fshader = Plat_LoadShader(render, DEF_FSHADER_PATH, SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 1);
-        render->vshaderSky = Plat_LoadShader(render, DEF_SKYBOX_VSHADER_PATH, SDL_GPU_SHADERSTAGE_VERTEX, 1, 0);
-        render->fshaderSky = Plat_LoadShader(render, DEF_SKYBOX_FSHADER_PATH, SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 1);
+        render->vshaderSky = Plat_LoadShader(render, DEF_SKYBOX_VSHADER_PATH, SDL_GPU_SHADERSTAGE_VERTEX, 0, 0);
+        render->fshaderSky = Plat_LoadShader(render, DEF_SKYBOX_FSHADER_PATH, SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 1);
         // Create main pipeline
         SDL_GPUGraphicsPipelineCreateInfo main_info = {
                 .target_info = {
@@ -285,6 +288,11 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
                 .vertex_shader = render->vshaderSky,
                 .fragment_shader = render->fshaderSky
         };
+        render->skyPipeline = SDL_CreateGPUGraphicsPipeline(render->device, &sky_info);
+        if (!render->skyPipeline) {
+                mFatal("Couldn't create skybox pipeline.");
+                return FALSE;
+        }
         render->isRunning = TRUE;
         mInfo("Opened window.");
         return TRUE;
