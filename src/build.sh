@@ -26,3 +26,5 @@ fi
 echo "Compiling shaders"
 glslc shaders/vshader.vert -o ../build/assets/shaders/vshader.spv
 glslc shaders/fshader.frag -o ../build/assets/shaders/fshader.spv
+glslc shaders/sky_vshader.vert -o ../build/assets/shaders/sky_vshader.spv
+glslc shaders/sky_fshader.frag -o ../build/assets/shaders/sky_fshader.spv

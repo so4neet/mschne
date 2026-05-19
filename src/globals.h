@@ -26,8 +26,11 @@ typedef int b8;
 #define DEF_WIN_NAME    "MSCHNE Window"
 
 // Shader defs
+// TODO: Switch to SDL_Shadercross
 #define DEF_VSHADER_PATH        "assets/shaders/vshader.spv"
 #define DEF_FSHADER_PATH        "assets/shaders/fshader.spv"
+#define DEF_SKYBOX_VSHADER_PATH     "assets/shaders/sky_vshader.spv"
+#define DEF_SKYBOX_FSHADER_PATH     "assets/shaders/sky_fshader.spv"
 
 // Movement defs
 #define DEF_MOVE_SPEED  4.0f
