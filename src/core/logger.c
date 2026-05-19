@@ -8,8 +8,8 @@ static void func_log(logLevel lvl, const char* msg, va_list args) {
         const char* lvl_clr[5] = {"0;41", "1;31", "1;33", "1;32", "1;34"};
         const char* lvl_str[5] = {"[FATAL] | ",
                                   "[ERROR] | ",
-                                  "[WARN] | ",
-                                  "[INFO] | ",
+                                  "[WARN]  | ",
+                                  "[INFO]  | ",
                                   "[DEBUG] | "};
         char buffer[4096];
         vsnprintf(buffer, sizeof(buffer), msg, args);

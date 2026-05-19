@@ -80,7 +80,7 @@ void Plat_StartFrame(renderer *render) {
 
         if (!SDL_WaitAndAcquireGPUSwapchainTexture(render->buffer, render->window, &render->swapchain, NULL, NULL)) {
                 SDL_SubmitGPUCommandBuffer(render->buffer);
-                mInfo("Couldn't acquire swapchain buffer.");
+                mWarn("Couldn't acquire swapchain buffer.");
                 render->frameLock = FALSE;
                 return;
         }
@@ -124,18 +124,17 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
         }
         // Check if w,h,n are defined
         if (win.width == 0) {
-                mWarn("Window width not defined, defaulting...");
+                mWarn("Window width not defined, defaulting to %i", DEF_WIDTH);
                 win.width = DEF_WIDTH;
         }
         if (win.height == 0) {
-                mWarn("Window height not defined, defaulting...");
+                mWarn("Window height not defined, defaulting to %i", DEF_HEIGHT);
                 win.height = DEF_HEIGHT;
         }
         if (win.winName == NULL) {
-                mWarn("Window name not defined, defaulting...");
+                mWarn("Window name not defined, defaulting to '%s'", DEF_WIN_NAME);
                 win.winName = DEF_WIN_NAME;
         }
-
         // Initialize the GPU 
         render->device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPU_SHADERFORMAT_DXIL | SDL_GPU_SHADERFORMAT_MSL, true, NULL);
         if (!render->device) {
@@ -195,7 +194,7 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
         render->fshader = Plat_LoadShader(render, DEF_FSHADER_PATH, SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 1);
         render->vshaderSky = Plat_LoadShader(render, DEF_SKYBOX_VSHADER_PATH, SDL_GPU_SHADERSTAGE_VERTEX, 0, 0);
         render->fshaderSky = Plat_LoadShader(render, DEF_SKYBOX_FSHADER_PATH, SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 1);
-        // Create main pipeline
+        // Create main pipeline        mInfo("%f", win->fov);
         SDL_GPUGraphicsPipelineCreateInfo main_info = {
                 .target_info = {
                         .num_color_targets = 1,
@@ -317,11 +316,15 @@ void Camera3D_Update(Camera3D *cam, float xoffset, float yoffset) {
 }
 
 void Camera3D_Init(Camera3D *cam, app_window *win) {
+        if (win->fov == 0.0f) {
+                mWarn("Camera FOV not defined, defaulting to %f", DEF_FOV);
+                win->fov = DEF_FOV;
+        }
         cam->yaw = 0.0f;
         cam->pitch = 0.0f;
         glm_vec3_copy((vec3){0.0f, 0.0f, 1.0f}, cam->position);
         glm_vec3_copy((vec3){0.0f, 1.0f, 0.0f}, cam->up);
         Camera3D_Update(cam, 0.0f, 0.0f);
         float aspect = (float)win->width / (float)win->height;
-        glm_perspective(glm_rad(90.0f), aspect, 0.1f, 100.0f, cam->proj_matrix);
+        glm_perspective(glm_rad(win->fov), aspect, 0.1f, 100.0f, cam->proj_matrix);
 }
