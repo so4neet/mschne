@@ -14,52 +14,37 @@
 
 void Camera3D_Update(Camera3D *cam, float xoffset, float yoffset);
 
-void Plat_LoadVertexShader(const char* path, renderer *render) {
+static SDL_GPUShader* Plat_LoadShader(renderer *render, const char* path, SDL_GPUShaderStage stage, Uint32 num_uniform_buffers, Uint32 num_samplers) {
         size_t size;
-        void* vert_shdr = SDL_LoadFile(path, &size);
-        if (!vert_shdr) {
-                mFatal("Couldn't load vertex shader.");
-        }
+        void* file = SDL_LoadFile(path, &size);
+        if (!file) mErr("Failed to load shader @ %s, you may encounter visual issues.", path);
 
-        SDL_GPUShaderCreateInfo vert_shader_info = {
-                .num_uniform_buffers = 1,
-                .num_samplers = 0,
+        SDL_GPUShaderCreateInfo info = {
+                .code = file,
+                .code_size = size,
+                .entrypoint = "main",
+                .format = SDL_GPU_SHADERFORMAT_SPIRV,
+                .stage = stage,
+                .num_uniform_buffers = num_uniform_buffers,
+                .num_samplers = num_samplers,
                 .num_storage_textures = 0,
-                .format = SDL_GPU_SHADERFORMAT_SPIRV,
-                .stage = SDL_GPU_SHADERSTAGE_VERTEX,
-                .entrypoint = "main",
-                .code = vert_shdr,
-                .code_size = size
         };
 
-        render->vshader = SDL_CreateGPUShader(render->device, &vert_shader_info);
+        SDL_GPUShader *shader = SDL_CreateGPUShader(render->device, &info);
+        SDL_free(file);
+        if (!shader) mErr("Failed to create shader @ %s.", path);
+        return shader; 
 }
-
-void Plat_LoadFragmentShader(const char* path, renderer *render) {
-        size_t size;
-        void* frag_shdr = SDL_LoadFile(path, &size);
-        if (!frag_shdr) {
-                mFatal("Couldn't load fragment shader.");
-        }
-
-        SDL_GPUShaderCreateInfo frag_shader_info = {
-                .num_uniform_buffers = 0,
-                .num_samplers = 1,
-                .format = SDL_GPU_SHADERFORMAT_SPIRV,
-                .stage = SDL_GPU_SHADERSTAGE_FRAGMENT,
-                .entrypoint = "main",
-                .code = frag_shdr,
-                .code_size = size
-        };
-
-        render->fshader = SDL_CreateGPUShader(render->device, &frag_shader_info);
-}
-
 
 void Plat_FreeSDL(renderer *render) {
+        if(render->skyPipeline) SDL_ReleaseGPUGraphicsPipeline(render->device, render->skyPipeline);
         if(render->pipeline) SDL_ReleaseGPUGraphicsPipeline(render->device, render->pipeline);
         if(render->vshader) SDL_ReleaseGPUShader(render->device, render->vshader);
         if(render->fshader) SDL_ReleaseGPUShader(render->device, render->fshader);
+        if(render->vshaderSky) SDL_ReleaseGPUShader(render->device, render->vshaderSky);
+        if(render->fshaderSky) SDL_ReleaseGPUShader(render->device, render->fshaderSky);
+        if(render->cubemap) SDL_ReleaseGPUTexture(render->device, render->cubemap);
+        if(render->cubeSampler) SDL_ReleaseGPUSampler(render->device, render->cubeSampler);
         if(render->vbo) SDL_ReleaseGPUBuffer(render->device, render->vbo);
         if(render->ibo) SDL_ReleaseGPUBuffer(render->device, render->ibo);
         if(render->depthTex) SDL_ReleaseGPUTexture(render->device, render->depthTex);
@@ -190,7 +175,6 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
         // Lock cursor
         SDL_SetWindowRelativeMouseMode(render->window, true);
 
-
         SDL_GPUTextureCreateInfo depth_info = {
                 .type = SDL_GPU_TEXTURETYPE_2D,
                 .format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT,
@@ -200,14 +184,19 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
                 .layer_count_or_depth = 1,
                 .num_levels = 1
         };
+
         render->depthTex = SDL_CreateGPUTexture(render->device, &depth_info);
         if (!render->depthTex) {
                 mFatal("Couldn't create depth texture.");
                 return FALSE;
         }
-        Plat_LoadVertexShader(DEF_VSHADER_PATH, render);
-        Plat_LoadFragmentShader(DEF_FSHADER_PATH, render);
-        SDL_GPUGraphicsPipelineCreateInfo pipeline_info = {
+        // Load shaders
+        render->vshader = Plat_LoadShader(render, DEF_VSHADER_PATH, SDL_GPU_SHADERSTAGE_VERTEX, 1, 0);
+        render->fshader = Plat_LoadShader(render, DEF_FSHADER_PATH, SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 1);
+        render->vshaderSky = Plat_LoadShader(render, DEF_SKYBOX_VSHADER_PATH, SDL_GPU_SHADERSTAGE_VERTEX, 0, 0);
+        render->fshaderSky = Plat_LoadShader(render, DEF_SKYBOX_FSHADER_PATH, SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 1);
+        // Create main pipeline
+        SDL_GPUGraphicsPipelineCreateInfo main_info = {
                 .target_info = {
                         .num_color_targets = 1,
                         .color_target_descriptions = (SDL_GPUColorTargetDescription[]) {{
@@ -257,15 +246,12 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
                         }
                 }
                 },
-
                 .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
-
                 .rasterizer_state = {
                         .fill_mode = SDL_GPU_FILLMODE_FILL,
                         .cull_mode = SDL_GPU_CULLMODE_BACK,
                         .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE
                 },
-                
                 .depth_stencil_state = {
                         .enable_depth_test = true,
                         .enable_depth_write = true,
@@ -274,9 +260,37 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
                 .vertex_shader = render->vshader,
                 .fragment_shader = render->fshader
         };
-        render->pipeline = SDL_CreateGPUGraphicsPipeline(render->device, &pipeline_info);
+        render->pipeline = SDL_CreateGPUGraphicsPipeline(render->device, &main_info);
         if (!render->pipeline) {
-                mFatal("Couldn't create graphics pipeline.");
+                mFatal("Couldn't create main graphics pipeline.");
+                return FALSE;
+        }
+        SDL_GPUGraphicsPipelineCreateInfo sky_info = {
+                .target_info = {
+                        .num_color_targets = 1,
+                        .color_target_descriptions = (SDL_GPUColorTargetDescription[]) {{
+                                .format = SDL_GetGPUSwapchainTextureFormat(render->device, render->window),
+                        }},
+                        .depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT,
+                        .has_depth_stencil_target = true
+                },
+                .vertex_input_state = { .num_vertex_buffers = 0, .num_vertex_attributes = 0 },
+                .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
+                .rasterizer_state = {
+                        .fill_mode = SDL_GPU_FILLMODE_FILL,
+                        .cull_mode = SDL_GPU_CULLMODE_NONE,
+                },
+                .depth_stencil_state = {
+                        .enable_depth_test = true,
+                        .enable_depth_write = false,
+                        .compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL
+                },
+                .vertex_shader = render->vshaderSky,
+                .fragment_shader = render->fshaderSky
+        };
+        render->skyPipeline = SDL_CreateGPUGraphicsPipeline(render->device, &sky_info);
+        if (!render->skyPipeline) {
+                mFatal("Couldn't create skybox pipeline.");
                 return FALSE;
         }
         render->isRunning = TRUE;
@@ -287,6 +301,8 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
 void Camera3D_Update(Camera3D *cam, float xoffset, float yoffset) {
         cam->yaw += xoffset;
         cam->pitch += yoffset;
+
+        if (xoffset == 0.0f && yoffset == 0.0f) return;
 
         if (cam->pitch > 89.0f) cam->pitch = 89.0f;
         if (cam->pitch < -89.0f) cam->pitch = -89.0f;
@@ -301,14 +317,11 @@ void Camera3D_Update(Camera3D *cam, float xoffset, float yoffset) {
 }
 
 void Camera3D_Init(Camera3D *cam, app_window *win) {
+        cam->yaw = 0.0f;
+        cam->pitch = 0.0f;
         glm_vec3_copy((vec3){0.0f, 0.0f, 1.0f}, cam->position);
-        glm_vec3_copy((vec3){0.0f, 0.0f, 0.0f}, cam->target);
         glm_vec3_copy((vec3){0.0f, 1.0f, 0.0f}, cam->up);
-        glm_vec3_sub(cam->position, cam->target, cam->direction);
-        glm_vec3_cross(cam->up, cam->direction, cam->camRight);
-        glm_vec3_normalize(cam->camRight);
-        glm_vec3_cross(cam->direction, cam->camRight, cam->camUp);
+        Camera3D_Update(cam, 0.0f, 0.0f);
         float aspect = (float)win->width / (float)win->height;
-        glm_perspective(glm_rad(60.0f), aspect, 0.1f, 100.0f, cam->proj_matrix);
-        glm_lookat(cam->position, cam->target, cam->up, cam->view_matrix);
+        glm_perspective(glm_rad(90.0f), aspect, 0.1f, 100.0f, cam->proj_matrix);
 }

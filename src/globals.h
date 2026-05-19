@@ -26,8 +26,11 @@ typedef int b8;
 #define DEF_WIN_NAME    "MSCHNE Window"
 
 // Shader defs
+// TODO: Switch to SDL_Shadercross
 #define DEF_VSHADER_PATH        "assets/shaders/vshader.spv"
 #define DEF_FSHADER_PATH        "assets/shaders/fshader.spv"
+#define DEF_SKYBOX_VSHADER_PATH     "assets/shaders/sky_vshader.spv"
+#define DEF_SKYBOX_FSHADER_PATH     "assets/shaders/sky_fshader.spv"
 
 // Movement defs
 #define DEF_MOVE_SPEED  4.0f
@@ -47,13 +50,18 @@ typedef struct renderer {
         SDL_GPUDevice *device;
         SDL_GPUCommandBuffer *buffer;
         SDL_GPUGraphicsPipeline *pipeline;
+        SDL_GPUGraphicsPipeline *skyPipeline;
         SDL_GPURenderPass *renderPass;
+        SDL_GPUTexture *cubemap;
+        SDL_GPUSampler *cubeSampler;
         SDL_GPUTexture *swapchain;
         SDL_GPUTexture *depthTex;
         SDL_GPUBuffer *vbo;
         SDL_GPUBuffer *ibo;
         SDL_GPUShader *vshader;
         SDL_GPUShader *fshader;
+        SDL_GPUShader *vshaderSky;
+        SDL_GPUShader *fshaderSky;
         SDL_Event event;
         b8 isRunning;
         b8 frameLock;

@@ -13,6 +13,113 @@ static float delta_time = 0.0f;
 renderer render = {0};
 Camera3D cam = {0};
 
+static const char* CUBE_FACES[6] = {
+        "assets/skybox/px.png",
+        "assets/skybox/nx.png",
+        "assets/skybox/py.png",
+        "assets/skybox/ny.png",
+        "assets/skybox/pz.png",
+        "assets/skybox/nz.png"
+};
+
+MAPI void m_loadCubemap() {
+        SDL_Surface *faces[6];
+        for (int i=0; i<6; i++) {
+                SDL_Surface *raw = IMG_Load(CUBE_FACES[i]);
+                if (!raw) mErr("Failed to load cubemap face: %s.", CUBE_FACES[i]);
+                faces[i] = SDL_ConvertSurface(raw, SDL_PIXELFORMAT_RGBA32);
+                SDL_DestroySurface(raw);
+        }
+
+        int w = faces[0]->w;
+        int h = faces[0]->h;
+        size_t faceSize = w * h * 4;
+
+        SDL_GPUTextureCreateInfo cube_info = {
+                .type = SDL_GPU_TEXTURETYPE_CUBE,
+                .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
+                .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER,
+                .width = w,
+                .height = h,
+                .layer_count_or_depth = 6,
+                .num_levels = 1
+        };
+
+        SDL_GPUSamplerCreateInfo samp_info = {
+                .min_filter = SDL_GPU_FILTER_LINEAR,
+                .mag_filter = SDL_GPU_FILTER_LINEAR,
+                .mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR,
+                .address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+                .address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+                .address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+        };
+        render.cubeSampler = SDL_CreateGPUSampler(render.device, &samp_info);
+
+        SDL_GPUTexture *cubemap = SDL_CreateGPUTexture(render.device, &cube_info);
+        if (!cubemap) mErr("Failed to create cubemap GPU texture.");
+
+        SDL_GPUTransferBufferCreateInfo tbuf_info = {
+                .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
+                .size = faceSize * 6
+        };
+        SDL_GPUTransferBuffer *tbuf = SDL_CreateGPUTransferBuffer(render.device, &tbuf_info);
+        uint8_t *mapped = SDL_MapGPUTransferBuffer(render.device, tbuf, false);
+        for (int i=0; i<6; i++) {
+                memcpy(mapped + faceSize * i, faces[i]->pixels, faceSize);
+                SDL_DestroySurface(faces[i]);
+        }
+        SDL_UnmapGPUTransferBuffer(render.device, tbuf);
+
+        SDL_GPUCommandBuffer *upload_cmd = SDL_AcquireGPUCommandBuffer(render.device);
+        SDL_GPUCopyPass *copy_pass = SDL_BeginGPUCopyPass(upload_cmd);
+
+        for (int i=0; i<6; i++) {
+                SDL_GPUTextureTransferInfo src = {
+                        .transfer_buffer = tbuf,
+                        .offset = faceSize * i
+                };
+                SDL_GPUTextureRegion dst = {
+                        .texture = cubemap,
+                        .layer = i,
+                        .w = w,
+                        .h = h,
+                        .d = 1
+                };
+                SDL_UploadToGPUTexture(copy_pass, &src, &dst, false);
+        }
+
+        SDL_EndGPUCopyPass(copy_pass);
+        SDL_SubmitGPUCommandBuffer(upload_cmd);
+        SDL_ReleaseGPUTransferBuffer(render.device, tbuf);
+        mDebug("Loaded skybox.");
+        render.cubemap = cubemap;
+}
+
+MAPI void m_drawSkybox() {
+        if (!render.frameLock) return;
+
+        typedef struct {
+                mat4 inv_proj;
+                mat4 inv_view;
+        } SkyUBO;
+
+        mat4 view_no_trans, inv_proj, inv_view;
+        glm_look((vec3){0.0f, 0.0f, 0.0f}, cam.direction, cam.up, view_no_trans);
+        glm_mat4_inv(cam.proj_matrix, inv_proj);
+        glm_mat4_inv(view_no_trans, inv_view);
+        SkyUBO sky_ubo;
+        glm_mat4_copy(inv_proj, sky_ubo.inv_proj);
+        glm_mat4_copy(inv_view, sky_ubo.inv_view);
+        SDL_BindGPUGraphicsPipeline(render.renderPass, render.skyPipeline);
+        SDL_GPUTextureSamplerBinding bind = {
+                .texture = render.cubemap,
+                .sampler = render.cubeSampler
+        };
+        SDL_BindGPUFragmentSamplers(render.renderPass, 0, &bind, 1);
+        SDL_PushGPUFragmentUniformData(render.buffer, 0, &sky_ubo, sizeof(SkyUBO));
+        SDL_DrawGPUPrimitives(render.renderPass, 3, 1, 0, 0);
+}
+
 MAPI float m_deltaTime() {
         Uint64 ct = SDL_GetTicksNS();
         if (lt == 0) lt = ct;
@@ -22,7 +129,11 @@ MAPI float m_deltaTime() {
 }
 
 MAPI b8 m_createWin(app_window win) {
-        Plat_InitWindow(win, &render);
+        if (!Plat_InitWindow(win, &render)) {
+                // Catch if window can't open and make sure to free memory.
+                Plat_FreeSDL(&render);
+                return FALSE;
+        }
         Camera3D_Init(&cam, &win);
         return TRUE;
 }
@@ -55,7 +166,6 @@ static Vertex* m_loadFBX(const char* path, size_t* out_count) {
         );
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-                mErr("Failed to load FBX");
                 return NULL;
         }
 
@@ -105,7 +215,7 @@ MAPI Model m_loadModel(const char* path, const char* tex_path) {
         size_t vert_count = 0;
         Vertex* verts = m_loadFBX(path, &vert_count);
         if (!verts) {
-                mErr("m_loadModel: no vertex data");
+                mErr("Failed to load %s", path);
                 return result;
         }
         // Generate AABB
@@ -145,7 +255,7 @@ MAPI Model m_loadModel(const char* path, const char* tex_path) {
                 mErr("Failed to load texture, defaulting to error texture.");
                 surface = IMG_Load("assets/textures/missing.png");
                 if (!surface) {
-                        mFatal("Failed to load warning texture, this may cause visual artifacts!");
+                        mFatal("Failed to load warning texture, skipping model.");
                         return result;
                 }
         }
@@ -205,27 +315,28 @@ MAPI Model m_loadModel(const char* path, const char* tex_path) {
 
 MAPI void m_drawModel(Model model, vec3 position, vec3 rotation) {
         if (render.frameLock == FALSE) {
-                mWarn("Frame is currently locked. Check where you are calling m_drawModel.");
+                mWarn("Frame is currently locked.");
                 return;
         }
         if (!model.vert_count || !model.texture) {
                 return;
         }
         mat4 viewProj;
-        glm_mat4_mul(cam.proj_matrix, cam.view_matrix, viewProj);
-        vec4 frust_planes[6];
-        glm_frustum_planes(viewProj, frust_planes);
         mat4 model_mat;
+        mat4 mvp;
+        vec4 frust_planes[6];
+
+        glm_mat4_mul(cam.proj_matrix, cam.view_matrix, viewProj);
+        glm_frustum_planes(viewProj, frust_planes);
         glm_mat4_identity(model_mat);
+        // Translate and rotate
         glm_translate(model_mat, position);
         glm_rotate(model_mat, glm_rad(rotation[0]), (vec3){1.0f, 0.0f, 0.0f});
         glm_rotate(model_mat, glm_rad(rotation[1]), (vec3){0.0f, 1.0f, 0.0f});
         glm_rotate(model_mat, glm_rad(rotation[2]), (vec3){0.0f, 0.0f, 1.0f});
-
-        mat4 mvp;
+        // Frustum check
         glm_mat4_mul(cam.proj_matrix, cam.view_matrix, mvp);
         glm_mat4_mul(mvp, model_mat, mvp);
-        // Frustum check
         vec3 world_aabb[2], local_aabb[2];
         glm_vec3_copy(model.aabb_min, local_aabb[0]);
         glm_vec3_copy(model.aabb_max, local_aabb[1]);
@@ -233,8 +344,8 @@ MAPI void m_drawModel(Model model, vec3 position, vec3 rotation) {
         if (!glm_aabb_frustum(world_aabb, frust_planes)) {
                 return;
         }
-        SDL_PushGPUVertexUniformData(render.buffer, 0, mvp, sizeof(mat4));
         SDL_BindGPUGraphicsPipeline(render.renderPass, render.pipeline);
+        SDL_PushGPUVertexUniformData(render.buffer, 0, mvp, sizeof(mat4));
         SDL_GPUBufferBinding vbo_binding = { .buffer = model.vbo, .offset = 0 };
         SDL_BindGPUVertexBuffers(render.renderPass, 0, &vbo_binding, 1);
         if (model.texture && model.sampler) {
