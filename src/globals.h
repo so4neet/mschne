@@ -24,6 +24,7 @@ typedef int b8;
 #define DEF_WIDTH       1280
 #define DEF_HEIGHT      720
 #define DEF_WIN_NAME    "MSCHNE Window"
+#define DEF_FOV         75.0f
 
 // Shader defs
 // TODO: Switch to SDL_Shadercross
@@ -41,6 +42,7 @@ typedef struct app_window {
         int width;
         int height;
         const char* winName;
+        float fov;
 } app_window;
 
 // Engine structs

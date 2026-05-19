@@ -252,7 +252,7 @@ MAPI Model m_loadModel(const char* path, const char* tex_path) {
         result.vert_count = vert_count;
         SDL_Surface* surface = IMG_Load(tex_path);
         if (!surface) {
-                mErr("Failed to load texture, defaulting to error texture.");
+                mWarn("Failed to load texture, defaulting to error texture.");
                 surface = IMG_Load("assets/textures/missing.png");
                 if (!surface) {
                         mFatal("Failed to load warning texture, skipping model.");
