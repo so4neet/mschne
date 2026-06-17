@@ -236,12 +236,14 @@ MAPI Model m_loadModel(const char* path, const char* tex_path) {
     Model result = {0};
     glm_vec3_fill(result.aabb_min,  FLT_MAX);
     glm_vec3_fill(result.aabb_max, -FLT_MAX);
-
+    b8 is_gltf = strstr(path, ".gltf") || (strstr(path, ".glb"));
     const struct aiScene* scene = aiImportFile(path,
-        aiProcess_Triangulate |
-        aiProcess_GenNormals |
-        aiProcess_JoinIdenticalVertices
+            aiProcess_Triangulate |
+            (is_gltf ? 0 : aiProcess_FlipUVs) |
+            aiProcess_GenNormals |
+            aiProcess_JoinIdenticalVertices
     );
+
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         mErr("Failed to load model: %s", path);
         return result;
