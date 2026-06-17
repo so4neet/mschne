@@ -37,12 +37,13 @@ void UpdatePlayerPos(Camera3D *cam, float delta_time) {
 
 void HandleFPSMouse(SDL_Event *event, Camera3D *cam) {
         switch (event->type) {
-                case SDL_EVENT_MOUSE_MOTION:
+                case SDL_EVENT_MOUSE_MOTION: {
                         float sensitivity = 0.1f;
                         float xoffset = event->motion.xrel * sensitivity;
                         float yoffset = -event->motion.yrel * sensitivity;
                         Camera3D_Update(cam, xoffset, yoffset);
                         break;
+                    }
                 default:
                         break;
         }

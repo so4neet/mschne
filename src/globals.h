@@ -88,11 +88,16 @@ typedef struct Vertex {
         float u, v;
 } Vertex;
 
+typedef struct SubMesh {
+    SDL_GPUBuffer*    vbo;
+    size_t            vert_count;
+    SDL_GPUTexture*   texture;
+    SDL_GPUSampler*   sampler;
+} SubMesh;
+
 typedef struct Model {
-        SDL_GPUBuffer* vbo;
-        SDL_GPUTexture* texture;
-        SDL_GPUSampler* sampler;
-        size_t vert_count;
+        SubMesh       meshes[256];
+        int           mesh_count;
         vec3 aabb_min;
         vec3 aabb_max;
 } Model;

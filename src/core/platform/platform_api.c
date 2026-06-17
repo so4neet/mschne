@@ -194,7 +194,7 @@ b8 Plat_InitWindow(app_window win, renderer *render) {
         render->fshader = Plat_LoadShader(render, DEF_FSHADER_PATH, SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 1);
         render->vshaderSky = Plat_LoadShader(render, DEF_SKYBOX_VSHADER_PATH, SDL_GPU_SHADERSTAGE_VERTEX, 0, 0);
         render->fshaderSky = Plat_LoadShader(render, DEF_SKYBOX_FSHADER_PATH, SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 1);
-        // Create main pipeline        mInfo("%f", win->fov);
+        // Create main pipeline
         SDL_GPUGraphicsPipelineCreateInfo main_info = {
                 .target_info = {
                         .num_color_targets = 1,
