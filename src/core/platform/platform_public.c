@@ -158,10 +158,9 @@ MAPI void m_destroyWin() {
 }
 
 static Vertex* m_loadMesh(const char* path, size_t* out_count) {
-        b8 is_gltf = strstr(path, ".gltf") || (strstr(path, ".glb"));
         const struct aiScene* scene = aiImportFile(path,
                 aiProcess_Triangulate |
-                (is_gltf ? 0 : aiProcess_FlipUVs) |
+                aiProcess_FlipUVs |
                 aiProcess_GenNormals |
                 aiProcess_JoinIdenticalVertices
         );
@@ -213,7 +212,16 @@ static Vertex* m_loadMesh(const char* path, size_t* out_count) {
 
 static SDL_Surface* load_material_texture(const struct aiScene* scene, struct aiMaterial* mat) {
     struct aiString tex_path_ai;
-    if (aiGetMaterialString(mat, AI_MATKEY_TEXTURE_DIFFUSE(0), &tex_path_ai) == AI_SUCCESS) {
+
+    // Look for base color first to appease gltf
+    int look = aiGetMaterialString(mat, "$tex.file", AI_MATKEY_BASE_COLOR_TEXTURE, &tex_path_ai);
+    
+    if (look != AI_SUCCESS) {
+        mDebug("Didn't find base color material.");
+        look = aiGetMaterialString(mat, "$tex.file", aiTextureType_DIFFUSE, 0, &tex_path_ai);
+    }
+    
+    if (look == AI_SUCCESS) {
         if (tex_path_ai.data[0] == '*') {
             int tex_index = atoi(tex_path_ai.data+1);
             const struct aiTexture* embedded = scene->mTextures[tex_index];
@@ -236,10 +244,9 @@ MAPI Model m_loadModel(const char* path, const char* tex_path) {
     Model result = {0};
     glm_vec3_fill(result.aabb_min,  FLT_MAX);
     glm_vec3_fill(result.aabb_max, -FLT_MAX);
-    b8 is_gltf = strstr(path, ".gltf") || (strstr(path, ".glb"));
     const struct aiScene* scene = aiImportFile(path,
             aiProcess_Triangulate |
-            (is_gltf ? 0 : aiProcess_FlipUVs) |
+            aiProcess_FlipUVs |
             aiProcess_GenNormals |
             aiProcess_JoinIdenticalVertices
     );
