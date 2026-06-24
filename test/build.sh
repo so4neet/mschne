@@ -2,7 +2,7 @@
 # clang wind_test.c -g -fdeclspec -fPIC -o ../build/wind_test.out -Isrc -I../src/ -L../build -lmschne -Wl,-rpath,.
 # clang wind_test_correct.c -g -fdeclspec -fPIC -o ../build/wind_test_correct.out -Isrc -I../src/ -L../build -lmschne -Wl,-rpath,.
 
-#!/bin/bash
+#!/usr/bin/env bash
 
 cObjs=$(find . -type f -name "*.c")
 cFlags="-g -fdeclspec -fPIC"

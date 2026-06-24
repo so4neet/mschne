@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 if [ "$1" == "-d" ]; then
         cd src
         ./build.sh -d

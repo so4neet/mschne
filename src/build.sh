@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 suppress=0
 cTarget="mschne"
@@ -13,7 +13,7 @@ do
         case "${flag}" in
                 d) suppress=1;;
         esac
-done 
+done
 
 echo "Building MSCHNE"
 if [ "$suppress" -eq 1 ]; then
